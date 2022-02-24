@@ -67,29 +67,3 @@ pub struct ReleaseAsset {
     browser_download_url: String,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_get() {
-        const REMOTE: &str = "https://api.github.com/repos/FabricMC/fabric/releases";
-
-        let body = ureq::get(REMOTE)
-            .call()
-            .unwrap_or_else(|_| panic!("request to '{}' failed", REMOTE))
-            .into_string()
-            .unwrap_or_else(|_| {
-                panic!("converting response from '{}' to a 'String' failed", REMOTE)
-            });
-
-        let releases: Vec<Release> = serde_json::from_str(&body).unwrap_or_else(|_| {
-            panic!(
-                "converting response from '{}' to a 'Vec<Release>' failed",
-                REMOTE
-            )
-        });
-
-        println!("{:#?}", releases);
-    }
-}
