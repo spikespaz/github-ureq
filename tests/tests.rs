@@ -1,7 +1,7 @@
-use test_case::test_case;
-use url::Url;
-
 use github_ureq::*;
+use test_case::test_case;
+use thiserror::Error;
+use url::Url;
 
 static TEST_REPOSITORIES: [&str; 12] = [
     "https://github.com/obsproject/obs-studio",
@@ -18,53 +18,29 @@ static TEST_REPOSITORIES: [&str; 12] = [
     "https://github.com/nodejs/node",
 ];
 
-#[test_case(TEST_REPOSITORIES[0] ; "get_repository_0")]
-#[test_case(TEST_REPOSITORIES[1] ; "get_repository_1")]
-#[test_case(TEST_REPOSITORIES[2] ; "get_repository_2")]
-#[test_case(TEST_REPOSITORIES[3] ; "get_repository_3")]
-#[test_case(TEST_REPOSITORIES[4] ; "get_repository_4")]
-#[test_case(TEST_REPOSITORIES[5] ; "get_repository_5")]
-#[test_case(TEST_REPOSITORIES[6] ; "get_repository_6")]
-#[test_case(TEST_REPOSITORIES[7] ; "get_repository_7")]
-#[test_case(TEST_REPOSITORIES[8] ; "get_repository_8")]
-#[test_case(TEST_REPOSITORIES[9] ; "get_repository_9")]
-#[test_case(TEST_REPOSITORIES[10] ; "get_repository_10")]
-#[test_case(TEST_REPOSITORIES[11] ; "get_repository_11")]
-pub fn get_repository(url: &str) {
-    let url = Url::parse(url).unwrap();
-    let (owner, repository) = url
-        .path()
-        .strip_prefix('/')
-        .unwrap()
-        .split_once('/')
-        .unwrap();
-
-    let endpoint = format!("https://api.github.com/repos/{}/{}", owner, repository);
-
-    let response = ureq::get(&endpoint)
-        .call()
-        .unwrap_or_else(|_| panic!("request to '{}' failed", endpoint));
-
-    let repository: Repository = response
-        .into_json()
-        .unwrap_or_else(|_| panic!("converting response from '{}' failed", endpoint));
-
-    println!("{:#?}", repository);
+#[derive(Debug, Error)]
+enum Error {
+    #[error("there was an issue making the request")]
+    Ureq(#[from] ureq::Error),
+    #[error("there was an issue deserializing a response to JSON")]
+    IoError(#[from] std::io::Error),
+    #[error("there was an issue fitting JSON to a strong type")]
+    Json(#[from] serde_json::Error),
 }
 
-#[test_case(TEST_REPOSITORIES[0] ; "get_releases_0")]
-#[test_case(TEST_REPOSITORIES[1] ; "get_releases_1")]
-#[test_case(TEST_REPOSITORIES[2] ; "get_releases_2")]
-#[test_case(TEST_REPOSITORIES[3] ; "get_releases_3")]
-#[test_case(TEST_REPOSITORIES[4] ; "get_releases_4")]
-#[test_case(TEST_REPOSITORIES[5] ; "get_releases_5")]
-#[test_case(TEST_REPOSITORIES[6] ; "get_releases_6")]
-#[test_case(TEST_REPOSITORIES[7] ; "get_releases_7")]
-#[test_case(TEST_REPOSITORIES[8] ; "get_releases_8")]
-#[test_case(TEST_REPOSITORIES[9] ; "get_releases_9")]
-#[test_case(TEST_REPOSITORIES[10] ; "get_releases_10")]
-#[test_case(TEST_REPOSITORIES[11] ; "get_releases_11")]
-pub fn get_releases(url: &str) {
+type Result<T> = std::result::Result<T, Error>;
+
+fn get<T>(endpoint: &str) -> Result<T>
+where
+    T: serde::de::DeserializeOwned,
+{
+    let response = ureq::get(endpoint).call()?;
+    let json = response.into_json()?;
+
+    Ok(serde_json::from_value(json)?)
+}
+
+fn endpoint(url: &str, endpoint: &str) -> String {
     let url = Url::parse(url).unwrap();
     let (owner, repository) = url
         .path()
@@ -73,18 +49,52 @@ pub fn get_releases(url: &str) {
         .split_once('/')
         .unwrap();
 
-    let endpoint = format!(
-        "https://api.github.com/repos/{}/{}/releases",
-        owner, repository
-    );
+    endpoint
+        .replace("{owner}", owner)
+        .replace("{repository}", repository)
+}
 
-    let response = ureq::get(&endpoint)
-        .call()
-        .unwrap_or_else(|_| panic!("request to '{}' failed", endpoint));
+#[test_case(TEST_REPOSITORIES[0]; "get_repository_0")]
+#[test_case(TEST_REPOSITORIES[1]; "get_repository_1")]
+#[test_case(TEST_REPOSITORIES[2]; "get_repository_2")]
+#[test_case(TEST_REPOSITORIES[3]; "get_repository_3")]
+#[test_case(TEST_REPOSITORIES[4]; "get_repository_4")]
+#[test_case(TEST_REPOSITORIES[5]; "get_repository_5")]
+#[test_case(TEST_REPOSITORIES[6]; "get_repository_6")]
+#[test_case(TEST_REPOSITORIES[7]; "get_repository_7")]
+#[test_case(TEST_REPOSITORIES[8]; "get_repository_8")]
+#[test_case(TEST_REPOSITORIES[9]; "get_repository_9")]
+#[test_case(TEST_REPOSITORIES[10]; "get_repository_10")]
+#[test_case(TEST_REPOSITORIES[11]; "get_repository_11")]
+fn get_repository(url: &str) {
+    let result: Result<Repository> = get(&endpoint(
+        url,
+        "https://api.github.com/repos/{owner}/{repository}",
+    ));
 
-    let releases: Vec<Release> = response
-        .into_json()
-        .unwrap_or_else(|_| panic!("converting response from '{}' failed", endpoint));
+    println!("{:#?}", result);
 
-    println!("{:#?}", releases);
+    assert!(result.is_ok());
+}
+
+#[test_case(TEST_REPOSITORIES[0]; "get_repository_releases_0")]
+#[test_case(TEST_REPOSITORIES[1]; "get_repository_releases_1")]
+#[test_case(TEST_REPOSITORIES[2]; "get_repository_releases_2")]
+#[test_case(TEST_REPOSITORIES[3]; "get_repository_releases_3")]
+#[test_case(TEST_REPOSITORIES[4]; "get_repository_releases_4")]
+#[test_case(TEST_REPOSITORIES[5]; "get_repository_releases_5")]
+#[test_case(TEST_REPOSITORIES[6]; "get_repository_releases_6")]
+#[test_case(TEST_REPOSITORIES[7]; "get_repository_releases_7")]
+#[test_case(TEST_REPOSITORIES[8]; "get_repository_releases_8")]
+#[test_case(TEST_REPOSITORIES[9]; "get_repository_releases_9")]
+#[test_case(TEST_REPOSITORIES[10]; "get_repository_releases_10")]
+#[test_case(TEST_REPOSITORIES[11]; "get_repository_releases_11")]
+fn get_repository_releases(url: &str) {
+    let result: Result<Vec<Release>> = get(&endpoint(
+        url,
+        "https://api.github.com/repos/{owner}/{repository}/releases",
+    ));
+
+    println!("{:#?}", result);
+    assert!(result.is_ok());
 }
