@@ -1,11 +1,11 @@
 use chrono::{DateTime, Local};
-use getset::{CopyGetters, Getters};
+use getset::Getters;
 use serde::{Deserialize, Serialize};
 
 use crate::User;
 
-#[derive(Clone, Debug, Serialize, Deserialize, Getters, CopyGetters)]
-#[getset(get, get)]
+#[derive(Clone, Debug, Serialize, Deserialize, Getters)]
+#[getset(get = "pub")]
 pub struct Release {
     url: String,
     assets_url: String,
@@ -27,8 +27,8 @@ pub struct Release {
     body: Option<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, Getters, CopyGetters)]
-#[getset(get, get)]
+#[derive(Clone, Debug, Serialize, Deserialize, Getters)]
+#[getset(get = "pub")]
 pub struct ReleaseAsset {
     url: String,
     id: usize,

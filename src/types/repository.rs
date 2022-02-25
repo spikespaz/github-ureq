@@ -1,11 +1,11 @@
 use chrono::{DateTime, Local};
-use getset::{CopyGetters, Getters};
+use getset::Getters;
 use serde::{Deserialize, Serialize};
 
 use crate::{License, User};
 
-#[derive(Clone, Debug, Serialize, Deserialize, Getters, CopyGetters)]
-#[getset(get, get)]
+#[derive(Clone, Debug, Serialize, Deserialize, Getters)]
+#[getset(get = "pub")]
 pub struct Repository {
     id: usize,
     node_id: String,
