@@ -16,7 +16,7 @@ pub struct Release {
     node_id: String,
     tag_name: String,
     target_commitish: String,
-    name: String,
+    name: Option<String>,
     draft: bool,
     prerelease: bool,
     created_at: DateTime<Local>,
@@ -24,7 +24,7 @@ pub struct Release {
     assets: Vec<ReleaseAsset>,
     tarball_url: String,
     zipball_url: String,
-    body: String,
+    body: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Getters, CopyGetters)]
@@ -34,7 +34,7 @@ pub struct ReleaseAsset {
     id: usize,
     node_id: String,
     name: String,
-    label: String,
+    label: Option<String>,
     uploader: User,
     content_type: String,
     state: String,
@@ -44,4 +44,3 @@ pub struct ReleaseAsset {
     updated_at: DateTime<Local>,
     browser_download_url: String,
 }
-

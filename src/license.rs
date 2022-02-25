@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 pub struct License {
     key: String,
     name: String,
-    spx_id: String,
-    url: String,
+    spdx_id: String,
+    url: Option<String>,
     node_id: String,
 }
