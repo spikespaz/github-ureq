@@ -1,7 +1,7 @@
-pub mod license;
-pub mod release;
-pub mod repository;
-pub mod user;
+mod license;
+mod release;
+mod repository;
+mod user;
 
 pub use license::*;
 pub use release::*;
