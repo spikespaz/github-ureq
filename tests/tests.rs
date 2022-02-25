@@ -1,9 +1,8 @@
-use github_ureq::*;
+use github_ureq::{utils::RepositoryNamespace, *};
 use test_case::test_case;
-use thiserror::Error;
-use url::Url;
 
-static TEST_REPOSITORIES: [&str; 12] = [
+static API_TOKEN: &str = env!("GITHUB_API_TOKEN");
+static TEST_REPOSITORIES: [&str; 13] = [
     "https://github.com/obsproject/obs-studio",
     "https://github.com/microsoft/vscode",
     "https://github.com/facebook/react-native",
@@ -16,54 +15,8 @@ static TEST_REPOSITORIES: [&str; 12] = [
     "https://github.com/archlinux/archinstall",
     "https://github.com/microsoft/TypeScript",
     "https://github.com/nodejs/node",
+    "https://github.com/twbs/bootstrap",
 ];
-
-#[derive(Debug, Error)]
-enum Error {
-    #[error("there was an issue making the request")]
-    Ureq(#[from] ureq::Error),
-    #[error("there was an issue deserializing a response to JSON")]
-    Io(#[from] std::io::Error),
-    #[error("there was an issue fitting JSON to a strong type")]
-    Json(#[from] serde_path_to_error::Error<serde_json::Error>),
-}
-
-type Result<T> = std::result::Result<T, Error>;
-
-fn get<T>(endpoint: &str) -> Result<T>
-where
-    T: serde::de::DeserializeOwned,
-{
-    let response = ureq::get(endpoint)
-        .set(
-            "Authorization",
-            &format!(
-                "token {}",
-                std::env::var("GITHUB_API_TOKEN")
-                    .expect("environment variable 'GITHUB_API_TOKEN' not set")
-            ),
-        )
-        .call()?;
-
-    let string = response.into_string()?;
-    let deserializer = &mut serde_json::Deserializer::from_str(&string);
-
-    Ok(serde_path_to_error::deserialize(deserializer)?)
-}
-
-fn endpoint(url: &str, endpoint: &str) -> String {
-    let url = Url::parse(url).unwrap();
-    let (owner, repository) = url
-        .path()
-        .strip_prefix('/')
-        .unwrap()
-        .split_once('/')
-        .unwrap();
-
-    endpoint
-        .replace("{owner}", owner)
-        .replace("{repository}", repository)
-}
 
 #[test_case(TEST_REPOSITORIES[0]; "get_repository_0")]
 #[test_case(TEST_REPOSITORIES[1]; "get_repository_1")]
@@ -77,12 +30,12 @@ fn endpoint(url: &str, endpoint: &str) -> String {
 #[test_case(TEST_REPOSITORIES[9]; "get_repository_9")]
 #[test_case(TEST_REPOSITORIES[10]; "get_repository_10")]
 #[test_case(TEST_REPOSITORIES[11]; "get_repository_11")]
+#[test_case(TEST_REPOSITORIES[12]; "get_repository_12")]
 fn get_repository(url: &str) {
-    let endpoint = endpoint(url, "https://api.github.com/repos/{owner}/{repository}");
-    let result: Result<Repository> = get(&endpoint);
+    let RepositoryNamespace { owner, repository } = utils::namespace(url).unwrap();
+    let result = github_ureq::get_repository(owner, repository, Some(API_TOKEN));
 
-    println!("{}\n{:#?}", endpoint, result);
-
+    println!("{}\n{:#?}", url, result);
     assert!(result.is_ok());
 }
 
@@ -98,13 +51,11 @@ fn get_repository(url: &str) {
 #[test_case(TEST_REPOSITORIES[9]; "get_repository_releases_9")]
 #[test_case(TEST_REPOSITORIES[10]; "get_repository_releases_10")]
 #[test_case(TEST_REPOSITORIES[11]; "get_repository_releases_11")]
+#[test_case(TEST_REPOSITORIES[12]; "get_repository_releases_12")]
 fn get_repository_releases(url: &str) {
-    let endpoint = endpoint(
-        url,
-        "https://api.github.com/repos/{owner}/{repository}/releases",
-    );
-    let result: Result<Vec<Release>> = get(&endpoint);
+    let RepositoryNamespace { owner, repository } = utils::namespace(url).unwrap();
+    let result = github_ureq::get_repository_releases(owner, repository, Some(API_TOKEN));
 
-    println!("{}\n{:#?}", endpoint, result);
+    println!("{}\n{:#?}", url, result);
     assert!(result.is_ok());
 }
