@@ -1,7 +1,22 @@
 [package]
 name = "github-ureq"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
+description = "A simple wrapper for the GitHub API V3 using the ureq crate."
+repository = "https://github.com/spikespaz/github-ureq"
+license = "MIT"
+keywords = [
+    "github",
+    "rest",
+    "api",
+    "web",
+    "remote"
+]
+categories = [
+    "api-bindings",
+    "web-programming",
+    "web-programming::http-client"
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
