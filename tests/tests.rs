@@ -34,7 +34,16 @@ fn get<T>(endpoint: &str) -> Result<T>
 where
     T: serde::de::DeserializeOwned,
 {
-    let response = ureq::get(endpoint).call()?;
+    let response = ureq::get(endpoint)
+        .set(
+            "Authorization",
+            &format!(
+                "token {}",
+                std::env::var("GITHUB_API_TOKEN")
+                    .expect("environment variable 'GITHUB_API_TOKEN' not set")
+            ),
+        )
+        .call()?;
     let json = response.into_json()?;
 
     Ok(serde_json::from_value(json)?)
