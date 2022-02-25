@@ -23,9 +23,9 @@ enum Error {
     #[error("there was an issue making the request")]
     Ureq(#[from] ureq::Error),
     #[error("there was an issue deserializing a response to JSON")]
-    IoError(#[from] std::io::Error),
+    Io(#[from] std::io::Error),
     #[error("there was an issue fitting JSON to a strong type")]
-    Json(#[from] serde_json::Error),
+    Json(#[from] serde_path_to_error::Error<serde_json::Error>),
 }
 
 type Result<T> = std::result::Result<T, Error>;
@@ -44,9 +44,11 @@ where
             ),
         )
         .call()?;
-    let json = response.into_json()?;
 
-    Ok(serde_json::from_value(json)?)
+    let string = response.into_string()?;
+    let deserializer = &mut serde_json::Deserializer::from_str(&string);
+
+    Ok(serde_path_to_error::deserialize(deserializer)?)
 }
 
 fn endpoint(url: &str, endpoint: &str) -> String {
@@ -76,12 +78,10 @@ fn endpoint(url: &str, endpoint: &str) -> String {
 #[test_case(TEST_REPOSITORIES[10]; "get_repository_10")]
 #[test_case(TEST_REPOSITORIES[11]; "get_repository_11")]
 fn get_repository(url: &str) {
-    let result: Result<Repository> = get(&endpoint(
-        url,
-        "https://api.github.com/repos/{owner}/{repository}",
-    ));
+    let endpoint = endpoint(url, "https://api.github.com/repos/{owner}/{repository}");
+    let result: Result<Repository> = get(&endpoint);
 
-    println!("{:#?}", result);
+    println!("{}\n{:#?}", endpoint, result);
 
     assert!(result.is_ok());
 }
@@ -99,11 +99,12 @@ fn get_repository(url: &str) {
 #[test_case(TEST_REPOSITORIES[10]; "get_repository_releases_10")]
 #[test_case(TEST_REPOSITORIES[11]; "get_repository_releases_11")]
 fn get_repository_releases(url: &str) {
-    let result: Result<Vec<Release>> = get(&endpoint(
+    let endpoint = endpoint(
         url,
         "https://api.github.com/repos/{owner}/{repository}/releases",
-    ));
+    );
+    let result: Result<Vec<Release>> = get(&endpoint);
 
-    println!("{:#?}", result);
+    println!("{}\n{:#?}", endpoint, result);
     assert!(result.is_ok());
 }
