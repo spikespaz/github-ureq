@@ -1,12 +1,10 @@
-use getset::Getters;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize, Getters)]
-#[getset(get = "pub")]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct License {
-    key: String,
-    name: String,
-    spdx_id: String,
-    url: Option<String>,
-    node_id: String,
+    pub key: String,
+    pub name: String,
+    pub spdx_id: String,
+    pub url: Option<String>,
+    pub node_id: String,
 }
